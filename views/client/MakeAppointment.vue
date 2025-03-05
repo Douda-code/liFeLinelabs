@@ -39,9 +39,11 @@ const activeSection = ref('make-appointment')
             <textarea id="reason" rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Enter the reason for your appointment..."></textarea>
           </div>
           <div class="flex items-center justify-between mt-4">
+            <RouterLink to="/make-appointment">
             <button class="bg-indigo-500 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-800 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full">
               Book Appointment
             </button>
+              </RouterLink>
           </div>
         </form>
       </main>
