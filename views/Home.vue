@@ -49,8 +49,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+  <main class="bg-gray-50 dark:bg-gradient-to-br from-indigo-600 to-pink-500 text-gray-900 dark:text-gray-100 transition-colors duration-200">
     <!-- Hero Section -->
+	<div class="relative 5 overflow-hidden">
     <main class="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
       <div class="sm:text-center lg:text-left">
         <h1 class="text-4xl tracking-tight font-extrabold text-gray-900 dark:text-white sm:text-5xl md:text-6xl">
@@ -62,12 +63,13 @@ onMounted(() => {
         </p>
       </div>
     </main>
+	</div>
 
     <!-- Features Section -->
-    <div class="py-12">
+    <div class="py-12 ">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="lg:text-center">
-          <h2 class="text-base text-indigo-600 dark:text-indigo-400 font-semibold tracking-wide uppercase">
+          <h2 class="text-base text-2x1 text-indigo-600 dark:text-indigo-400 font-semibold tracking-wide uppercase">
             Features
           </h2>
           <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
@@ -80,8 +82,8 @@ onMounted(() => {
 
         <div class="mt-10">
           <div class="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
-            <div v-for="feature in features" :key="feature.title" class="relative bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-              <div class="text-4xl mb-4">{{ feature.icon }}</div>
+            <div v-for="feature in features" :key="feature.title" class="relative bg-white dark:white bg-opacity-25 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div class="text-4xl mb-4 dark:text-white">{{ feature.icon }}</div>
               <h3 class="text-lg font-medium text-gray-900 dark:text-white">
                 {{ feature.title }}
               </h3>
@@ -95,16 +97,16 @@ onMounted(() => {
     </div>
 
     <!-- CTA Section -->
-    <div class="bg-indigo-700">
+   <div class=" bg-opacity-25">
       <div class="max-w-2xl mx-auto text-center py-16 px-4 sm:py-20 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-extrabold text-white sm:text-4xl">
+        <h2 class="text-3xl font-extrabold text-gray-5 dark:text-white sm:text-4xl">
           <span class="block">Ready to get started?</span>
           <span class="block">Create your account today.</span>
         </h2>
-        <p class="mt-4 text-lg leading-6 text-indigo-200">
+        <p class="mt-4 text-lg leading-6 text-gray-500 dark:text-gray-300">
           Join thousands of patients who trust our platform for their healthcare needs.
         </p>
-        <RouterLink to="/register" class="mt-8 w-full inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-indigo-50 sm:w-auto">
+        <RouterLink to="/register" class="mt-8 w-full inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 dark:text-indigo-600 dark:bg-white hover:bg-gray-100 sm:w-auto">
           Sign up for free
         </RouterLink>
       </div>
@@ -113,7 +115,6 @@ onMounted(() => {
     <!-- Login Modal -->
     <LoginModal v-if="showLoginModal" @close="closeLoginModal" />
     
-    <!-- Bottom Navigation Bar -->
-    <BottomNavBar />
+   
   </main>
 </template>
