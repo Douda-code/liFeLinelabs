@@ -1,9 +1,10 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useRouter } from 'vue-router';
 import { useDarkModeStore } from '../stores/darkMode';
 import { useAuthStore } from '../stores/auth';
+import { getUserNotifications, markNotificationAsRead, markNotificationAsImportant } from '../services/notificationService';
 import LoginModal from './LoginModal.vue';
 
 const router = useRouter();
@@ -11,18 +12,39 @@ const darkModeStore = useDarkModeStore();
 const authStore = useAuthStore();
 const showLoginModal = ref(false);
 
-const notifications = ref([
-  { title: 'New Message from Dr. Smith', date: '2024-03-19' },
-  { title: 'AI Analysis Report Ready', date: '2024-03-14' },
-  { title: 'MRI Results Available', date: '2024-03-15' },
-  { title: 'Consultation Reminder', date: '2024-03-20' },
-]);
-
+const notifications = ref([]);
 const showNotifications = ref(false);
 const showProfileDropdown = ref(false);
+const loading = ref(false);
+const error = ref(null);
+
+// Load user's notifications
+const loadNotifications = async () => {
+  if (!authStore.isAuthenticated) return;
+  
+  try {
+    loading.value = true;
+    const data = await getUserNotifications(authStore.user.id);
+    notifications.value = data;
+  } catch (err) {
+    console.error('Error loading notifications:', err);
+    error.value = 'Failed to load notifications';
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Format date for display
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString();
+};
 
 const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value;
+  if (showNotifications.value) {
+    loadNotifications();
+  }
 };
 
 const toggleProfileDropdown = () => {
@@ -46,6 +68,31 @@ const goToAdmin = () => {
   router.push('/admin');
 };
 
+const handleMarkAsRead = async (notification) => {
+  try {
+    await markNotificationAsRead(notification.id);
+    // Update local state
+    notification.is_read = true;
+  } catch (err) {
+    console.error('Error marking notification as read:', err);
+  }
+};
+
+const handleMarkAsImportant = async (notification) => {
+  try {
+    await markNotificationAsImportant(notification.id, !notification.is_important);
+    // Update local state
+    notification.is_important = !notification.is_important;
+  } catch (err) {
+    console.error('Error marking notification as important:', err);
+  }
+};
+
+const viewNotification = () => {
+  router.push('/notifications');
+  showNotifications.value = false;
+};
+
 const profilePicture = ref('https://via.placeholder.com/150');
 const userName = ref('John Doe');
 
@@ -60,10 +107,22 @@ const handleClickOutside = (event) => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
+  if (authStore.isAuthenticated) {
+    loadNotifications();
+  }
 });
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
+});
+
+// Watch for auth state changes
+watch(() => authStore.isAuthenticated, (isAuthenticated) => {
+  if (isAuthenticated) {
+    loadNotifications();
+  } else {
+    notifications.value = [];
+  }
 });
 </script>
 
@@ -129,7 +188,7 @@ onUnmounted(() => {
                 stroke-linecap="round" 
                 stroke-linejoin="round" 
                 stroke-width="2" 
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.486 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
               />
               <path 
                 stroke-linecap="round" 
@@ -153,26 +212,71 @@ onUnmounted(() => {
               </button>
               <div
                 v-if="showNotifications"
-                class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50"
+                class="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50"
               >
-                <div class="block px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+                <div class="block px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700">
                   Notifications
                 </div>
-                <div class="mt-1">
-                  <ul class="space-y-2">
+                <div class="mt-1 max-h-96 overflow-y-auto">
+                  <div v-if="loading" class="p-4 text-center text-gray-500 dark:text-gray-400">
+                    Loading notifications...
+                  </div>
+                  <div v-else-if="error" class="p-4 text-center text-red-500 dark:text-red-400">
+                    {{ error }}
+                  </div>
+                  <div v-else-if="notifications.length === 0" class="p-4 text-center text-gray-500 dark:text-gray-400">
+                    No notifications
+                  </div>
+                  <ul v-else class="space-y-1">
                     <li
                       v-for="notification in notifications"
-                      :key="notification.title"
-                      class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"
+                      :key="notification.id"
+                      class="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      :class="{
+                        'bg-gray-50 dark:bg-gray-700': !notification.is_read,
+                        'opacity-75': notification.is_read
+                      }"
                     >
-                      <div>
-                        <h3 class="font-medium text-gray-900 dark:text-gray-100">{{ notification.title }}</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                          {{ notification.date }}
-                        </p>
+                      <div class="flex-1">
+                        <div class="flex items-center">
+                          <h3 class="font-medium text-gray-900 dark:text-white">{{ notification.title }}</h3>
+                          <button 
+                            @click="handleMarkAsImportant(notification)"
+                            class="ml-2 text-yellow-500 hover:text-yellow-600"
+                            :class="{ 'opacity-50': !notification.is_important }"
+                          >
+                            ★
+                          </button>
+                        </div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ notification.content }}</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500">{{ formatDate(notification.created_at) }}</p>
+                      </div>
+                      <div class="flex items-center space-x-2">
+                        <button 
+                          v-if="!notification.is_read"
+                          @click="handleMarkAsRead(notification)" 
+                          class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+                        >
+                          Mark as Read
+                        </button>
+                        <button 
+                          @click="viewNotification"
+                          class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+                        >
+                          View
+                        </button>
                       </div>
                     </li>
                   </ul>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 p-2 text-center">
+                  <RouterLink 
+                    to="/notifications" 
+                    class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+                    @click="showNotifications = false"
+                  >
+                    View All Notifications
+                  </RouterLink>
                 </div>
               </div>
             </div>
