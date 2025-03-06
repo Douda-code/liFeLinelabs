@@ -127,11 +127,11 @@ watch(() => authStore.isAuthenticated, (isAuthenticated) => {
 </script>
 
 <template>
-  <nav class="bg-white dark:bg-gray-800 shadow-lg">
+  <nav class="bg-white dark:bg-indigo-900 shadow-lg">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between h-16">
          <RouterLink to="/" class="flex items-center gap-x-0">
-    <span class="text-4xl font-bold text-indigo-600 dark:text-indigo-400">liFeliNe</span>
+    <span class="text-4xl font-bold text-indigo-600 dark:text-white">liFeliNe</span>
     <span class="text-xl font-bold text-indigo-600 dark:text-indigo-400 relative ">Labs</span>
   </RouterLink>
         <div class="flex items-center">
@@ -337,7 +337,7 @@ watch(() => authStore.isAuthenticated, (isAuthenticated) => {
             </button>
             <RouterLink
               to="/register"
-              class="bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-indigo-500 dark:text-indigo-400 font-bold py-2 px-4 rounded border border-indigo-500 dark:border-indigo-400 focus:outline-none focus:shadow-outline"
+              class="bg-white dark:bg-white hover:bg-gray-100 dark:hover:bg-gray-600 text-indigo-500 dark:text-indigo-500 font-bold py-2 px-4 rounded border border-indigo-500 dark:border-indigo-400 focus:outline-none focus:shadow-outline"
             >
               Sign Up
             </RouterLink>
