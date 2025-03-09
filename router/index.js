@@ -247,6 +247,6 @@ router.beforeEach(async (to, from, next) => {
   else {
     next()
   }
-})
+
 
 export default router
