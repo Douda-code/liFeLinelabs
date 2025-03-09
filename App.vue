@@ -10,6 +10,7 @@ import { useDarkModeStore } from './stores/darkMode'
 
 const route = useRoute()
 const authStore = useAuthStore()
+const isAuthLoaded = computed(() => authStore.isAuthLoaded) 
 const darkModeStore = useDarkModeStore()
 
 // Check if the current route is in the admin section
@@ -48,7 +49,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen" :class="isAdminRoute ? 'bg-gray-100 dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-900'">
+  <div v-if="isAuthLoaded" class="min-h-screen" :class="isAdminRoute ? 'bg-gray-100 dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-900'">
     <ClientNavbar v-if="showClientNavbar" />
     <AdminNavbar v-if="showAdminNavbar" />
     <RouterView />
