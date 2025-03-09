@@ -208,17 +208,18 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
-
-  if (!authStore.isAuthenticated && to.meta.requiresAuth) {
-    return next('/login')
+  
+  // Wait for auth to initialize
+  if (authStore.loading) {
+    await new Promise(resolve => {
+      const unwatch = authStore.$subscribe(() => {
+        if (!authStore.loading) {
+          unwatch()
+          resolve()
+        }
+      })
+    })
   }
-
-  if (authStore.isAuthenticated && to.path === '/login') {
-    return next('/dashboard')
-  }
-
-  next()
-})
 
 
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
