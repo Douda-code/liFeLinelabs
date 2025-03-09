@@ -221,7 +221,6 @@ router.beforeEach(async (to, from, next) => {
     })
   }
 
-
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
   
@@ -248,6 +247,6 @@ router.beforeEach(async (to, from, next) => {
   else {
     next()
   }
-
+})
 
 export default router
