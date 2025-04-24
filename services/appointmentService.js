@@ -70,6 +70,24 @@ export const updateAppointmentStatus = async (appointmentId, status) => {
       .eq('id', appointmentId)
 
     if (error) throw error
+    
+    // Create notification for the patient
+    const { data: appointment, error: fetchError } = await supabase
+      .from('appointments')
+      .select('patient_id, appointment_date, appointment_time')
+      .eq('id', appointmentId)
+      .single()
+    
+    if (!fetchError && appointment) {
+      await supabase.rpc('create_notification', {
+        p_user_id: appointment.patient_id,
+        p_title: `Appointment ${status}`,
+        p_content: `Your appointment on ${appointment.appointment_date} at ${appointment.appointment_time} has been ${status.toLowerCase()}.`,
+        p_notification_type: 'appointment',
+        p_is_important: status === 'Cancelled'
+      })
+    }
+    
   } catch (error) {
     console.error('Error updating appointment status:', error)
     throw error

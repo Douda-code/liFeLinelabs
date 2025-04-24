@@ -186,7 +186,7 @@ export const createScanAnalysis = async (scanId, analysisData) => {
  */
 export const isValidScanFile = (file) => {
   // Check file type
-  const validTypes = ['image/jpeg', 'image/png', 'image/dicom', 'application/pdf'];
+  const validTypes = ['image/jpeg', 'image/png',  'image/jpg' ];
   if (!validTypes.includes(file.type) && !file.type.startsWith('image/')) {
     return false;
   }

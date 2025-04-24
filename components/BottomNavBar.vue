@@ -11,7 +11,7 @@ const darkModeStore = useDarkModeStore()
       <div class="flex justify-center h-16 items-center">
         <div class="flex space-x-8">
           <RouterLink
-            to="/"
+            to="/about-us"
             class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
           >
             About Us

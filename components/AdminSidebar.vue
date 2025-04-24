@@ -28,6 +28,9 @@ const logout = async () => {
       <RouterLink to="/admin/scan-results" class="block py-2 px-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200" :class="{'bg-indigo-600 text-white': activeSection === 'scan-results', 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700': activeSection !== 'scan-results'}">
         Scan Results
       </RouterLink>
+      <RouterLink to="/admin/appointments" class="block py-2 px-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200" :class="{'bg-indigo-600 text-white': activeSection === 'appointments', 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700': activeSection !== 'appointments'}">
+        Appointments
+      </RouterLink>
       <RouterLink to="/admin/ai-models" class="block py-2 px-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200" :class="{'bg-indigo-600 text-white': activeSection === 'ai-models', 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700': activeSection !== 'ai-models'}">
         AI Models
       </RouterLink>

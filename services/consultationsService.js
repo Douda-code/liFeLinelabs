@@ -109,6 +109,33 @@ export const updateConsultationStatus = async (consultationId, status) => {
       .eq('id', consultationId)
 
     if (error) throw error
+    
+    // Create notification for the patient
+    const { data: consultation, error: fetchError } = await supabase
+      .from('consultations')
+      .select(`
+        patient_id,
+        scheduled_at,
+        consultation_type,
+        physician:users!consultations_physician_id_fkey(first_name, last_name)
+      `)
+      .eq('id', consultationId)
+      .single()
+    
+    if (!fetchError && consultation) {
+      const physicianName = consultation.physician 
+        ? `Dr. ${consultation.physician.first_name} ${consultation.physician.last_name}` 
+        : 'your physician'
+      
+      await supabase.rpc('create_notification', {
+        p_user_id: consultation.patient_id,
+        p_title: `Consultation ${status}`,
+        p_content: `Your ${consultation.consultation_type} consultation with ${physicianName} scheduled for ${new Date(consultation.scheduled_at).toLocaleString()} has been ${status.toLowerCase()}.`,
+        p_notification_type: 'consultation',
+        p_is_important: status === 'Cancelled'
+      })
+    }
+    
   } catch (error) {
     console.error('Error updating consultation status:', error)
     throw error

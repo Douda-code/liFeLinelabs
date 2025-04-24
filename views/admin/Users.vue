@@ -7,11 +7,7 @@ import { getAllUsers, updateUser } from '../../services/adminService';
 
 const darkModeStore = useDarkModeStore();
 
-const users = ref([
-  { id: 1, first_name: 'John', last_name: 'Doe', email: 'john.doe@example.com', role: 'patient', status: 'Active', created_at: '2024-01-15' },
-  { id: 2, first_name: 'Jane', last_name: 'Smith', email: 'jane.smith@example.com', role: 'physician', status: 'Active', created_at: '2023-12-01' },
-  { id: 3, first_name: 'Alice', last_name: 'Johnson', email: 'alice.johnson@example.com', role: 'admin', status: 'Active', created_at: '2024-02-20' },
-]);
+const users = ref([]);
 
 const userTypeFilter = ref('');
 const userStatusFilter = ref('');
@@ -22,7 +18,7 @@ const loading = ref(false);
 
 // Load users from database
 const loadUsers = async () => {
-  try {
+  try { 
     loading.value = true;
     const data = await getAllUsers();
     if (data) {
@@ -30,6 +26,7 @@ const loadUsers = async () => {
     }
   } catch (error) {
     console.error('Error loading users:', error);
+    error.value = 'Failed to load users';
   } finally {
     loading.value = false;
   }

@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/auth'
 
 // Client routes
 import Home from '../views/Home.vue'
-import Dashboard from '../views/client/Dashboard.vue'
+import AboutUs from '../views/client/AboutUs.vue'
 import Scans from '../views/client/Scans.vue'
 import ScanDetails from '../views/client/ScanDetails.vue'
 import AIAnalysis from '../views/client/AIAnalysis.vue'
@@ -15,6 +15,9 @@ import AccountSettings from '../views/client/AccountSettings.vue'
 import Notifications from '../views/client/Notifications.vue'
 import MakeAppointment from '../views/client/MakeAppointment.vue'
 import ActivityHistory from '../views/client/ActivityHistory.vue'
+import UpgradeAccount from '../views/client/UpgradeAccount.vue'
+import FindDoctors from '../views/client/FindDoctors.vue'
+
 import Login from '../views/client/Login.vue'
 import Register from '../views/client/Register.vue'
 
@@ -32,6 +35,8 @@ import AdminSupportTicketing from '../views/admin/SupportTicketing.vue'
 import AdminAccountSettings from '../views/admin/AccountSettings.vue'
 import AdminEmergency from '../views/admin/Emergency.vue'
 import AdminAIModels from '../views/admin/AIModels.vue'
+import AdminAppointments from '../views/admin/Appointments.vue'
+
 
 const routes = [
   // Client routes
@@ -96,6 +101,11 @@ const routes = [
     component: Contact,
   },
   {
+    path: '/about-us',
+    name: 'about-us',
+    component: AboutUs,
+  },
+  {
     path: '/account-settings',
     name: 'account-settings',
     component: AccountSettings,
@@ -117,6 +127,18 @@ const routes = [
     path: '/activity-history',
     name: 'activity-history',
     component: ActivityHistory,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/upgrade-account',
+    name: 'UpgradeAccount',
+    component: UpgradeAccount,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/find-doctors',
+    name: 'find-doctors',
+    component: FindDoctors,
     meta: { requiresAuth: true },
   },
 
@@ -197,6 +219,12 @@ const routes = [
     name: 'admin-ai-models',
     component: AdminAIModels,
     meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/appointments',
+    name: 'appointments',
+    component: AdminAppointments,
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 
