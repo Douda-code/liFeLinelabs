@@ -146,7 +146,7 @@ onMounted(() => {
     <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6 py-6 px-4 sm:px-6 lg:px-8">
 
       <!-- Main Content -->
-      <main class="md:col-span-3 space-y-6">
+      <main class="md:col-span-10 space-y-6">
         <!-- Search and Filter Controls -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
