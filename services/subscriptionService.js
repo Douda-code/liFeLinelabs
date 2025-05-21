@@ -7,30 +7,64 @@ import { supabase } from '../lib/supabase'
  */
 export const getSubscriptionStatus = async (userId) => {
   try {
-    const { data: user, error: userError } = await supabase
+    // First check if the user exists
+    const { data: user, error: userError } = await supabase.auth.getUser()
+    
+    if (userError) {
+      console.error('Error getting user:', userError)
+      throw userError
+    }
+    
+    if (!user) {
+      throw new Error('User not found')
+    }
+    
+    // Get user subscription type from users table
+    const { data: userData, error: userDataError } = await supabase
       .from('users')
-      .select('subscription_type')
-      .eq('id', userId)
-      .single()
+      .select('subscription_type, id')
+      .eq('id', userId || user.user.id)
+      .maybeSingle()
 
-    if (userError) throw userError
+    if (userDataError) {
+      console.error('Error getting user data:', userDataError)
+      throw userDataError
+    }
+    
+    // If user data not found, return default
+    if (!userData) {
+      return {
+        type: 'standard',
+        subscription: null
+      }
+    }
 
+    // Get active subscription
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', userId)
       .eq('status', 'active')
+      .order('created_at', { ascending: false })
       .maybeSingle()
 
-    if (subError) throw subError
+    if (subError) {
+      console.error('Error getting subscription:', subError)
+      // Continue even if subscription query fails
+    }
 
     return {
-      type: user.subscription_type,
+      type: userData.subscription_type || 'standard',
       subscription: subscription
     }
   } catch (error) {
     console.error('Error getting subscription status:', error)
-    throw error
+    // Return default values instead of throwing
+    return {
+      type: 'standard',
+      subscription: null,
+      error: error.message
+    }
   }
 }
 
@@ -106,18 +140,47 @@ export const updateSubscription = async (userId, planType) => {
 /**
  * Check if user has premium access
  * @param {string} userId - The ID of the user
- * @returns {Promise} - Promise that resolves with whether user has premium access
+ * @returns {Promise<boolean>} - Promise that resolves with whether user has premium access
  */
 export const hasPremiumAccess = async (userId) => {
   try {
     const { data, error } = await supabase
-      .rpc('has_premium_access', { 
-        user_id: userId  // Changed from p_user_id to user_id to match the function parameter
-      })
+      .from('users')
+      .select('subscription_type')
+      .eq('id', userId)
+      .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Error checking subscription type:', error)
+      return false
+    }
+    
+    // Check if user has premium or family subscription
+    const isPremium = data?.subscription_type === 'premium' || data?.subscription_type === 'family'
+    
+    // If not premium by subscription_type, check active subscriptions
+    if (!isPremium) {
+      const { data: subscriptionData, error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle()
+      
+      if (subscriptionError) {
+        console.error('Error checking active subscriptions:', subscriptionError)
+        return false
+      }
+      
+      // Check if there's an active subscription that hasn't expired
+      if (subscriptionData && new Date(subscriptionData.current_period_end) > new Date()) {
+        return true
+      }
+      
+      return false
+    }
 
-    return data
+    return isPremium
   } catch (error) {
     console.error('Error checking premium access:', error)
     return false

@@ -2,9 +2,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import NavSidebar from '../../components/NavSidebar.vue'
 import { analyzeScan, isValidScanFile } from '../../services/aiService'
-import { uploadScan, getPatientScans } from '../../services/scanService'
+import { uploadScan, getPatientScans } from '../../services/scanService' 
 import { useAuthStore } from '../../stores/auth'
 import { createNotification } from '../../services/notificationService'
+import { hasPremiumAccess } from '../../services/subscriptionService'
 import { RouterLink } from 'vue-router'
 
 const authStore = useAuthStore()
@@ -16,6 +17,8 @@ const showResult = ref(false)
 const error = ref(null)
 const scanType = ref('X-Ray')
 const dropActive = ref(false)
+const isPremium = ref(false)
+const showPremiumBanner = ref(true)
 
 // Analysis statistics
 const stats = reactive({
@@ -23,6 +26,11 @@ const stats = reactive({
   normalScans: 0,
   abnormalScans: 0
 })
+
+// Dismiss premium banner
+const dismissPremiumBanner = () => {
+  showPremiumBanner.value = false
+}
 
 const handleFileChange = (event) => {
   const selectedFile = event.target.files[0]
@@ -76,11 +84,15 @@ const uploadScanAndAnalyze = async () => {
         return
       }
       
-      // Upload scan to storage and create record in database
       const scanData = await uploadScan(file.value, scanType.value, authStore.user.id)
+      
+      if (!scanData || !scanData.id) {
+        throw new Error('Failed to create scan record')
+      }
       
       // Call the AI service to analyze the scan
       const result = await analyzeScan(file.value, scanData.id)
+      console.log('Analysis result:', result)
       
       // Update analysis result
       analysisResult.value = result
@@ -131,7 +143,13 @@ const resetAnalysis = () => {
 const loadUserStats = async () => {
   if (authStore.isAuthenticated) {
     try {
-      const scans = await getPatientScans(authStore.user.id)
+      const userId = authStore.user?.id
+      if (!userId) {
+        console.error('No user ID available')
+        return
+      }
+      
+      const scans = await getPatientScans(userId)
       
       if (scans && scans.length > 0) {
         stats.totalScans = scans.length
@@ -151,21 +169,60 @@ const loadUserStats = async () => {
   }
 }
 
+// Check if user has premium access
+const checkPremiumAccess = async () => {
+  if (authStore.isAuthenticated) {
+    const userId = authStore.user?.id
+    if (!userId) {
+      console.error('No user ID available')
+      return false
+    }
+    
+    try {
+      isPremium.value = await hasPremiumAccess(userId)
+      console.log('User premium status for AI analysis:', isPremium.value)
+    } catch (err) {
+      console.error('Error checking premium status:', err)
+    }
+  }
+}
+
 onMounted(() => {
   loadUserStats()
+  checkPremiumAccess()
 })
 </script>
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-       <!-- Header with gradient background -->
-
     <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 py-4 px-4 sm:px-6 lg:px-8">
-    
-    
-
       <!-- Main Content -->
       <main class="md:col-span-5 space-y-8">
+        <!-- Premium Banner -->
+        <div v-if="!isPremium && showPremiumBanner" class="bg-gradient-to-r from-yellow-500 to-amber-500 text-white p-4 rounded-xl shadow-md relative">
+          <button @click="dismissPremiumBanner" class="absolute top-2 right-2 text-white hover:text-gray-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          <div class="flex items-start pr-6">
+            <div class="flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-300" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium">Upgrade to Premium</h3>
+              <div class="mt-1 text-xs">
+                <p>Standard users get basic binary classification (Normal/Abnormal). Upgrade to premium for advanced multi-class disease detection.</p>
+                <RouterLink to="/upgrade-account" class="mt-2 inline-block bg-white text-yellow-600 px-2 py-1 rounded text-xs font-medium">
+                  Upgrade Now
+                </RouterLink>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         <div v-if="!showResult" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
           <div class="flex items-center mb-6">
             <div class="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mr-4">
@@ -348,15 +405,13 @@ onMounted(() => {
           </div>
         </div>
         
-       
-        
         <!-- Analysis Results -->
         <div v-if="showResult && analysisResult" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
           <div class="flex justify-between items-center mb-8">
-            <div class="flex items-center">
+            <div class="flex items-center space-x-2">
               <div class="h-10 w-10 rounded-full mr-4"
                 :class="{
-                  'bg-green-100 dark:bg-green-900': analysisResult.classification === 'Normal',
+                  'bg-green-100 dark:bg-green-900': analysisResult.classification ===   'Normal',
                   'bg-red-100 dark:bg-red-900': analysisResult.classification !== 'Normal'
                 }">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 m-2" :class="{
@@ -367,7 +422,19 @@ onMounted(() => {
                   <path v-else fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                 </svg>
               </div>
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Analysis Results</h2>
+              <div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Analysis Results</h2>
+                <div class="flex items-center mt-1">
+                  <span 
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    :class="analysisResult.isPremiumAnalysis ? 
+                      'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 
+                      'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'"
+                  >
+                    {{ analysisResult.isPremiumAnalysis ? 'Premium Multi-class AI' : 'Standard Binary AI' }}
+                  </span>
+                </div>
+              </div>
             </div>
             <button @click="resetAnalysis" class="flex items-center text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -387,7 +454,8 @@ onMounted(() => {
                 }"
               >
                 {{ analysisResult.classification }}
-              </span> condition with
+              </span> 
+              condition with
               <span class="font-bold text-xl" :class="{
                 'text-green-600': parseFloat(analysisResult.confidenceScore) >= 90,
                 'text-yellow-600': parseFloat(analysisResult.confidenceScore) >= 70 && parseFloat(analysisResult.confidenceScore) < 90,
@@ -431,6 +499,24 @@ onMounted(() => {
                 </div>
               </div>
             </div>
+            
+            <!-- Premium vs Standard AI explanation -->
+            <div v-if="!isPremium && !analysisResult.isPremiumAnalysis" class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800/50">
+              <div class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500 mt-0.5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                </svg>
+                <div>
+                  <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-300">Standard AI Analysis</h4>
+                  <p class="mt-1 text-xs text-yellow-700 dark:text-yellow-200">
+                    You're using our standard binary classification model that detects normal vs. abnormal conditions. 
+                    <RouterLink to="/upgrade-account" class="font-medium underline">Upgrade to premium</RouterLink> 
+                    for our advanced multi-class model that can specifically identify pneumonia, tuberculosis, and other conditions.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             <div v-if="analysisResult.comments" class="mt-2">
               <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Additional Details</h3>
               <p class="text-gray-600 dark:text-gray-400 text-sm">

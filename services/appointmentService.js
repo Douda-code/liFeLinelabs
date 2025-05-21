@@ -10,6 +10,22 @@ import { supabase, APPOINTMENT_STATUS } from '../lib/supabase'
  */
 export const createAppointment = async (patientId, appointmentDate, appointmentTime, reason) => {
   try {
+    // First check if the slot is already taken
+    const { data: existingSlot, error: checkError } = await supabase
+      .from('appointments')
+      .select('id')
+      .eq('appointment_date', appointmentDate)
+      .eq('appointment_time', appointmentTime)
+      .limit(1)
+    
+    if (checkError) throw checkError
+    
+    // If the slot is already taken, throw an error
+    if (existingSlot && existingSlot.length > 0) {
+      throw new Error('This time slot has already been booked. Please select another time.')
+    }
+    
+    // If the slot is available, create the appointment
     const { data, error } = await supabase
       .from('appointments')
       .insert([
@@ -23,9 +39,8 @@ export const createAppointment = async (patientId, appointmentDate, appointmentT
       ])
       .select()
       .single()
-
+      
     if (error) throw error
-
     return data
   } catch (error) {
     console.error('Error creating appointment:', error)

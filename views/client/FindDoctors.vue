@@ -3,11 +3,11 @@ import { ref, onMounted, computed } from 'vue'
 import NavSidebar from '../../components/NavSidebar.vue'
 import { findNearbyLungDoctors, getUserLocation, getDoctorDetails, initializeMap } from '../../services/doctorMapService'
 import { useAuthStore } from '../../stores/auth'
-import { useRouter } from 'vue-router'
+import { RouterLink } from 'vue-router'
 
 const authStore = useAuthStore()
-const router = useRouter()
 const activeSection = ref('find-doctors')
+const activeTab = ref('find-doctors')
 
 const doctors = ref([])
 const loading = ref(false)
@@ -143,16 +143,7 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Find Lung Specialists Near You</h1>
-      <p class="text-gray-600 dark:text-gray-300 mb-8">
-        Locate pulmonologists and lung specialists in your area for consultations and treatment.
-      </p>
-    </div>
-
-    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6 py-4 px-4 sm:px-6 lg:px-8">
-      <!-- Sidebar -->
-      <NavSidebar :activeSection="activeSection" />
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6 py-6 px-4 sm:px-6 lg:px-8">
 
       <!-- Main Content -->
       <main class="md:col-span-3 space-y-6">
@@ -485,16 +476,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Map container styles */
-/* Doctor card hover effect */
-.doctor-card {
-  transition: all 0.3s ease;
-}
-
-.doctor-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-</style>

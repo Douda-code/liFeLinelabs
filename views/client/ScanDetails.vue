@@ -6,7 +6,8 @@ import { getScanById, getScanFileUrl } from '../../services/scanService'
 import { useAuthStore } from '../../stores/auth'
 import { supabase } from '../../lib/supabase'
 import { jsPDF } from 'jspdf'
-import html2canvas from 'html2canvas'
+import html2canvas from 'html2canvas' 
+import { hasPremiumAccess } from '../../services/subscriptionService'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,6 +21,8 @@ const scanImageUrl = ref(null)
 const imageLoading = ref(false)
 const imageError = ref(null)
 const generatingPdf = ref(false)
+const isPremium = ref(false)
+const showPremiumBanner = ref(true)
 
 // Function to get signed URL for scan image
 const getScanImage = async (filePath) => {
@@ -91,6 +94,27 @@ onMounted(async () => {
   }
 })
 
+// Check if user has premium access
+const checkPremiumAccess = async () => {
+  if (authStore.isAuthenticated) {
+    try {
+      isPremium.value = await hasPremiumAccess(authStore.user.id)
+      console.log('User premium status for PDF download:', isPremium.value)
+    } catch (err) {
+      console.error('Error checking premium status:', err)
+    }
+  }
+}
+
+onMounted(() => {
+  checkPremiumAccess()
+})
+
+// Dismiss premium banner
+const dismissPremiumBanner = () => {
+  showPremiumBanner.value = false
+}
+
 // Format file size for display
 const formatFileSize = (bytes) => {
   if (bytes < 1024) return bytes + ' bytes'
@@ -129,6 +153,12 @@ const downloadScan = async () => {
 // Generate and download PDF report
 const downloadPdfReport = async () => {
   try {
+    // Check if user has premium access
+    if (!isPremium.value) {
+      router.push('/upgrade-account')
+      return
+    }
+    
     generatingPdf.value = true
     
     // Create a temporary div to render the report content
@@ -343,10 +373,15 @@ const downloadPdfReport = async () => {
           </div>
           
           <div class="flex justify-end space-x-4">
-            <button 
+            <button
               @click="downloadPdfReport" 
-              :disabled="generatingPdf"
-              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              :disabled="generatingPdf || !isPremium"
+              :class="[
+                'inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium',
+                isPremium 
+                  ? 'text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500' 
+                  : 'text-white bg-gray-400 cursor-not-allowed'
+              ]"
             >
               <svg v-if="!generatingPdf" class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -355,9 +390,16 @@ const downloadPdfReport = async () => {
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <span v-if="!generatingPdf">Download PDF Report</span>
+              <span v-if="!generatingPdf">{{ isPremium ? 'Download PDF Report' : 'Premium Feature' }}</span>
               <span v-else>Generating PDF...</span>
             </button>
+            <RouterLink 
+              v-if="!isPremium"
+              to="/upgrade-account" 
+              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+            >
+              Upgrade to Premium
+            </RouterLink>
             <button 
               @click="downloadScan" 
               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -370,6 +412,31 @@ const downloadPdfReport = async () => {
           </div>
         </div>
       </main>
+    </div>
+    
+    <!-- Premium Feature Banner for PDF Reports -->
+    <div v-if="!isPremium && scanDetails && showPremiumBanner" class="fixed bottom-4 right-4 max-w-sm bg-gradient-to-r from-yellow-600 to-amber-600 text-white p-4 rounded-lg shadow-lg">
+      <button @click="dismissPremiumBanner" class="absolute top-2 right-2 text-white hover:text-gray-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+      </button>
+      <div class="flex items-start pr-6">
+        <div class="flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-300" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium">Upgrade to Premium</h3>
+          <div class="mt-1 text-xs">
+            <p>PDF Report generation is a premium feature. Upgrade your account to download detailed PDF reports of your scan results.</p>
+            <RouterLink to="/upgrade-account" class="mt-2 inline-block bg-white text-yellow-600 px-2 py-1 rounded text-xs font-medium">
+              Upgrade Now
+            </RouterLink>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

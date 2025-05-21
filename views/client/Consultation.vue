@@ -158,13 +158,17 @@ const getConsultationIcon = (type) => {
 
 onMounted(() => {
   loadConsultations()
-  loadPhysicians()
-  checkPremiumAccess()
+  loadPhysicians() 
+  // Make sure to await the premium check
+  checkPremiumAccess().then(() => {
+    console.log('Premium status loaded:', hasPremium.value)
+  })
 })
 
 const checkPremiumAccess = async () => {
   if (authStore.isAuthenticated) {
     hasPremium.value = await hasPremiumAccess(authStore.user.id)
+    console.log('Premium access check result:', hasPremium.value)
   }
 }
 
@@ -178,6 +182,7 @@ const handleConsultationClick = () => {
 
 // Add premium check to template
 const checkPremiumAndProceed = () => {
+  console.log('Checking premium access before proceeding:', hasPremium.value)
   if (!hasPremium.value) {
     router.push('/upgrade-account')
     return false

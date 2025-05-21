@@ -7,7 +7,7 @@ import { getPatientAppointments } from '../../services/appointmentService'
 import { getPatientConsultations } from '../../services/consultationsService'
 import { getPatientScans } from '../../services/scanService'
 
-const authStore = useAuthStore()
+const authStore = useAuthStore() 
 
 const recentActivities = ref([])
 const upcomingAppointments = ref([])
@@ -17,39 +17,27 @@ const activeTab = ref('recent-activity')
 const loading = ref(true)
 const error = ref(null)
 
-const formatDate = (dateString) => {
-  const options = { year: 'numeric', month: 'short', day: 'numeric' }
-  return new Date(dateString).toLocaleDateString('en-US', options)
-}
-
-const getStatusColor = (status) => {
-  return {
-    'confirmed': 'bg-green-100 text-green-800',
-    'pending': 'bg-yellow-100 text-yellow-800',
-    'cancelled': 'bg-red-100 text-red-800',
-    'completed': 'bg-blue-100 text-blue-800'
-  }[status] || 'bg-gray-100 text-gray-800'
-}
-
 const loadActivities = async () => {
   if (!authStore.isAuthenticated) return
 
-  try {
+  try { 
     const [appointments, consultations, scans] = await Promise.all([
       getPatientAppointments(authStore.user.id),
       getPatientConsultations(authStore.user.id),
       getPatientScans(authStore.user.id)
     ])
 
+    // Process appointments
     upcomingAppointments.value = [
       ...appointments.map(appointment => ({
         type: 'appointment',
         title: appointment.reason,
-        date: appointment.appointment_date,
+        date: new Date(appointment.appointment_date).toISOString(),
         summary: `Appointment scheduled for ${appointment.appointment_time}`,
         icon: 'CalendarIcon',
         status: appointment.status
       })),
+      // Process consultations
       ...consultations.map(consultation => ({
         type: 'consultation',
         title: `${consultation.consultation_type} Consultation`,
@@ -60,11 +48,13 @@ const loadActivities = async () => {
       }))
     ].sort((a, b) => new Date(b.date) - new Date(a.date))
 
+    // Process scans
     recentActivities.value = scans.map(scan => ({
       type: 'scan',
       title: `${scan.scan_type} Scan Results`,
-      date: scan.scan_date,
-      summary: `Scan results are available for review.`,
+      date: new Date(scan.upload_date).toISOString(),
+      summary: scan.scan_analyses && scan.scan_analyses.length > 0 
+        ? scan.scan_analyses[0].ai_report : 'Scan results are available for review.',
       icon: 'DocumentTextIcon',
       status: scan.status
     }))
@@ -74,6 +64,32 @@ const loadActivities = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const formatDate = (dateString) => {
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) {
+      return 'Invalid date'
+    }
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    })
+  } catch (error) {
+    console.error('Error formatting date:', error, dateString)
+    return 'Invalid date'
+  }
+}
+
+const getStatusColor = (status) => {
+  return {
+    'confirmed': 'bg-green-100 text-green-800',
+    'pending': 'bg-yellow-100 text-yellow-800',
+    'cancelled': 'bg-red-100 text-red-800',
+    'completed': 'bg-blue-100 text-blue-800'
+  }[status] || 'bg-gray-100 text-gray-800'
 }
 
 onMounted(() => {
@@ -117,7 +133,7 @@ onMounted(() => {
                   <div class="flex-shrink-0">
                     <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-300">
                       {{ activity.icon ? activity.icon.charAt(0) : '#' }}
-                    </div>
+                    </div> 
                   </div>
                   <div class="ml-4 flex-1">
                     <div class="flex items-center justify-between">
@@ -160,7 +176,7 @@ onMounted(() => {
                     <div class="flex-shrink-0">
                       <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold">
                         {{ new Date(appointment.date).getDate() }}
-                      </div>
+                      </div> 
                     </div>
                     <div class="ml-4">
                       <h3 class="text-sm font-medium text-gray-900 dark:text-white">{{ appointment.title }}</h3>
@@ -215,11 +231,11 @@ onMounted(() => {
           <div class="p-6">
             <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-8 rounded-lg text-center">
               <p class="text-white dark:text-white">Calendar view placeholder</p>
-              <p class="text-sm text-white dark:text-white mt-2">Shows appointments and activities in calendar format</p>
+              <p class="text-sm text-white dark:text-white mt-2">Shows appointments and activities in calendar format</p> 
             </div>
           </div>
         </section>
       </main>
     </div>
-  </div>
+  </div> 
 </template>

@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
-import { addPaymentMethod, updateSubscription, getSubscriptionStatus } from '../../services/subscriptionService'
+import { addPaymentMethod, updateSubscription, getSubscriptionStatus, hasPremiumAccess } from '../../services/subscriptionService'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -15,14 +15,36 @@ const expiryDate = ref('')
 const cvv = ref('')
 const selectedPlan = ref('premium')
 const currentSubscription = ref(null)
+const loadingSubscription = ref(true)
 
 onMounted(async () => {
   if (authStore.isAuthenticated) {
     try {
-      const status = await getSubscriptionStatus(authStore.user.id)
-      currentSubscription.value = status
+      loadingSubscription.value = true
+      
+      // Get subscription status
+      try {
+        const status = await getSubscriptionStatus(authStore.user.id)
+        currentSubscription.value = status
+        console.log('Current subscription status:', status)
+      } catch (statusError) {
+        console.error('Error getting subscription details:', statusError)
+        // Continue even if we can't get detailed subscription info
+      }
+      
+      // Check premium access separately (more reliable)
+      const isPremium = await hasPremiumAccess(authStore.user.id)
+      console.log('User has premium access:', isPremium)
+      
+      // If user already has premium, show appropriate message
+      if (isPremium && !currentSubscription.value) {
+        currentSubscription.value = { type: 'premium' }
+      }
     } catch (err) {
       console.error('Error loading subscription status:', err)
+      error.value = 'Failed to load subscription status'
+    } finally {
+      loadingSubscription.value = false
     }
   }
 })
@@ -64,6 +86,7 @@ const handleSubmit = async () => {
     // Validate card details
     if (!cardNumber.value || !expiryDate.value || !cvv.value) {
       error.value = 'Please fill in all card details'
+      loading.value = false
       return
     }
 
@@ -71,6 +94,7 @@ const handleSubmit = async () => {
     const expiryValidation = validateExpiryDate(expiryDate.value)
     if (!expiryValidation.valid) {
       error.value = expiryValidation.error
+      loading.value = false
       return
     }
     
@@ -104,9 +128,19 @@ const handleSubmit = async () => {
     <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Upgrade to Premium</h2>
     
     <!-- Current Subscription Status -->
-    <div v-if="currentSubscription" class="mb-8 p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
+    <div v-if="loadingSubscription" class="mb-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+      <svg class="animate-spin h-5 w-5 text-indigo-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span class="text-gray-700 dark:text-gray-300">Loading subscription status...</span>
+    </div>
+    <div v-else-if="currentSubscription" class="mb-8 p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
       <p class="text-indigo-700 dark:text-indigo-300">
-        Current Plan: <span class="font-semibold">{{ currentSubscription.type }}</span>
+        Current Plan: <span class="font-semibold">{{ currentSubscription.type.charAt(0).toUpperCase() + currentSubscription.type.slice(1) }}</span>
+        <span v-if="currentSubscription.subscription" class="ml-2 text-sm">
+          (Renews: {{ new Date(currentSubscription.subscription.current_period_end).toLocaleDateString() }})
+        </span>
       </p>
     </div>
 
