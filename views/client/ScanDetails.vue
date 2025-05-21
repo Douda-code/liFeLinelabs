@@ -283,19 +283,11 @@ const downloadPdfReport = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Scan Details</h1>
-    </div>
-
-    
-
-    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6 py-4 px-4 sm:px-6 lg:px-8">
-      <!-- Sidebar -->
-      <NavSidebar :activeSection="activeSection" />
+   <div class="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 py-4 px-4 sm:px-6 lg:px-8">
       
       <!-- Main Content -->
-      <main class="md:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <main class="md:col-span-10 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
         <div v-if="loading" class="flex justify-center items-center h-64">
           <svg class="animate-spin h-8 w-8 text-indigo-600 dark:text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
